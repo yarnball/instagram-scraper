@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Usage: 
-python app.py <username>
+python app.py <hashtag>
 """
 import concurrent.futures
 import errno
@@ -18,8 +18,8 @@ warnings.filterwarnings("ignore")
 
 class InstagramScraper:
 
-    def __init__(self, username):
-        self.username = username
+    def __init__(self, hashtag):
+        self.hashtag = hashtag
         self.numPosts = 0
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
         self.future_to_item = {}
@@ -33,7 +33,7 @@ class InstagramScraper:
         sys.stdout.flush()
 
         for item in media['items']:
-            future = self.executor.submit(self.download, item, './' + self.username)
+            future = self.executor.submit(self.download, item, './' + self.hashtag)
             self.future_to_item[future] = item
 
         if 'more_available' in media and media['more_available'] is True:
@@ -42,7 +42,7 @@ class InstagramScraper:
 
     def get_media(self, max_id):
         """Gets the user's media metadata"""
-        url = 'http://instagram.com/' + self.username + '/media'
+        url = 'http://instagram.com/explore/tags' + self.hashtag
 
         if max_id is not None:
             url += '?&max_id=' + max_id 
@@ -53,11 +53,11 @@ class InstagramScraper:
             media = json.loads(resp.text)
 
             if not media['items']:
-                raise ValueError('User %s is private' % self.username)
+                raise ValueError('User %s is private' % self.hashtag)
 
             return media
         else:
-            raise ValueError('User %s does not exist' % self.username)
+            raise ValueError('User %s does not exist' % self.hashtag)
 
     def download(self, item, save_dir='./'):
         """Downloads the media file"""
@@ -86,9 +86,9 @@ class InstagramScraper:
         os.utime(file_path, (file_time, file_time))
 
 if __name__ == '__main__':
-    username = sys.argv[1]
+    hashtag = sys.argv[1]
 
-    scraper = InstagramScraper(username)
+    scraper = InstagramScraper(hashtag)
     scraper.crawl()
 
     for future in tqdm.tqdm(concurrent.futures.as_completed(scraper.future_to_item), total=len(scraper.future_to_item), desc='Downloading'):
